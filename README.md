@@ -1,2 +1,2 @@
-# kirodh-food-addatives-vegetarian-vegan-safe
-To map all food addatives to vegan or vegetarian safe.
+# kirodh-food-additives-vegetarian-vegan-safe
+To map all food additives to vegan or vegetarian safe.
