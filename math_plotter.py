@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import quad
 from scipy.optimize import root_scalar
+import math
 
 class Axis:
     def __init__(self, x_min=-10, x_max=10):
@@ -55,11 +56,23 @@ class Axis:
     # -------------------------
     def x_from_signed_arc(self, s_target):
         """Find parabola x coordinate corresponding to signed arc-length s_target"""
+        # Maximum and minimum arc-length of parabola in x-range
+        s_min = self.arc_length(self.x_min)
+        s_max = self.arc_length(self.x_max)
+
+        if s_target < s_min or s_target > s_max:
+            # Out of parabola range → unplotable
+            return None
+
         func = lambda x: self.arc_length(x) - s_target
-        # bracket depends on sign
         bracket = (0, self.x_max) if s_target >= 0 else (self.x_min, 0)
-        sol = root_scalar(func, bracket=bracket, method='bisect')
-        return sol.root
+
+        try:
+            sol = root_scalar(func, bracket=bracket, method='bisect')
+            return sol.root
+        except ValueError:
+            # Safety net: function did not change sign
+            return None
 
     # -------------------------
     # Transform function
@@ -67,15 +80,16 @@ class Axis:
     def transform_point(self, x, y):
         """
         x : vertical line position
-        y : signed arc-length output (can be negative)
+        y : function output (interpreted as signed arc-length)
         """
-        # Find parabola point exactly at signed arc-length y
         x0 = self.x_from_signed_arc(y)
-        y0 = x0**2
+        if x0 is None:
+            # mark as unplotable
+            return None
 
+        y0 = x0 ** 2
         slope = 2 * x0
         if abs(slope) < 1e-12:
-            # vertex case
             return (x, y0)
 
         m_perp = -1.0 / slope
@@ -85,18 +99,29 @@ class Axis:
     # -------------------------
     # Plot arbitrary function
     # -------------------------
-    def plot_function(self, func, label):
-        xs = np.linspace(self.x_min, self.x_max, 300)
+    def plot_function(self, func, label, n_points=500):
+        # evenly spaced points in the x-range
+        xs = np.linspace(self.x_min, self.x_max, n_points)
+
         new_x = []
         new_y = []
+        skipped_x = []
 
         for x in xs:
-            y_arc = func(x)  # function output is the signed arc-length
+            y_arc = func(x)
             pt = self.transform_point(x, y_arc)
-            new_x.append(pt[0])
-            new_y.append(pt[1])
+            if pt is not None:
+                new_x.append(pt[0])
+                new_y.append(pt[1])
+            else:
+                skipped_x.append(x)
 
         self.ax.plot(new_x, new_y, label=label)
+
+        if skipped_x:
+            # optional: mark skipped points
+            self.ax.plot(skipped_x, [0] * len(skipped_x), marker='*', linestyle='',
+                         color='orange', label=f"Out of range points ({label})")
 
     # -------------------------
     # Master render
@@ -106,9 +131,9 @@ class Axis:
         self.plot_parabola()
 
         # Examples: output is signed arc-length
-        self.plot_function(lambda x: -x, "y=-x")
-        self.plot_function(lambda x: x, "y=x")
-        self.plot_function(lambda x: x**2, "y=x^2")
+        self.plot_function(lambda x: math.exp(-x**2), "y=-5x")
+        # self.plot_function(lambda x: math.exp2(x), "y=x")
+        # self.plot_function(lambda x: x**2, "y=x^2")
 
         self.ax.legend()
         plt.savefig(filename, bbox_inches="tight")
@@ -116,5 +141,5 @@ class Axis:
 
 
 if __name__ == "__main__":
-    a = Axis(-10, 10)
+    a = Axis(-2, 2)
     a.render()
