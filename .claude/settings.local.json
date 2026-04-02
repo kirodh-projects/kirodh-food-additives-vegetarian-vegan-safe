@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(sqlite3:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(conda run:*)"
+    ]
+  }
+}

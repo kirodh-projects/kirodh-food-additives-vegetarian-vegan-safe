@@ -1,3 +1,8 @@
+# Database files
+*.db
+food_additives.db
+.web_scrape_cache.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
