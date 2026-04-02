@@ -9,6 +9,7 @@ from src.db.connection import ensure_database, get_db_path
 from src.ui.pages.analytics import render_analytics_page
 from src.ui.pages.browse import render_browse_page
 from src.ui.pages.math_plotter import render_math_plotter_page
+from src.ui.pages.reverse_subtract import render_reverse_subtract_page
 from src.ui.pages.search import render_search_page
 
 
@@ -42,7 +43,7 @@ def main() -> None:
     st.sidebar.header("Tools")
     tools_page = st.sidebar.radio(
         "Other Tools",
-        ["None", "Math Plotter"],
+        ["None", "Math Plotter", "Reverse Subtraction"],
         index=0,
     )
 
@@ -52,9 +53,11 @@ def main() -> None:
         "```\npython -m src.etl.build_database\n```"
     )
 
-    # Math Plotter takes priority when selected
+    # Tools take priority when selected
     if tools_page == "Math Plotter":
         render_math_plotter_page()
+    elif tools_page == "Reverse Subtraction":
+        render_reverse_subtract_page()
     elif page == "Search":
         render_search_page(db_path)
     elif page == "Analytics":
