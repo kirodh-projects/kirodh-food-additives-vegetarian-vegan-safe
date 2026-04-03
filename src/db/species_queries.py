@@ -231,9 +231,8 @@ def _compute_stats(db_dir: str | None = None) -> dict:
     family_counts: dict[str, int] = {}
     trait_by_kingdom: dict[str, dict[str, float]] = {}
     has_traits = False
-    trait_sum_mob = 0.0
-    trait_sum_warm = 0.0
-    trait_sum_size = 0.0
+    has_gunas = False
+    trait_sums = {"mob": 0.0, "warm": 0.0, "size": 0.0, "pur": 0.0, "pas": 0.0, "ign": 0.0}
     trait_total_count = 0
 
     for db_path in db_files:
@@ -267,31 +266,44 @@ def _compute_stats(db_dir: str | None = None) -> dict:
             if not has_traits:
                 cols = {r[1] for r in conn.execute("PRAGMA table_info(species)")}
                 has_traits = "mobility_score" in cols
+                has_gunas = "purity_score" in cols
 
             if has_traits:
+                guna_cols = ", SUM(purity_score), SUM(passion_score), SUM(ignorance_score)" if has_gunas else ""
                 for row in conn.execute(
-                    """SELECT kingdom,
+                    f"""SELECT kingdom,
                         SUM(mobility_score), SUM(warm_blood_score), SUM(size_score),
-                        COUNT(*)
+                        COUNT(*){guna_cols}
                     FROM species GROUP BY kingdom"""
                 ):
                     k = row[0] or "Unknown"
                     cnt = row[4]
                     s_mob, s_warm, s_size = row[1] or 0, row[2] or 0, row[3] or 0
+                    s_pur = (row[5] or 0) if has_gunas else 0
+                    s_pas = (row[6] or 0) if has_gunas else 0
+                    s_ign = (row[7] or 0) if has_gunas else 0
 
                     if k not in trait_by_kingdom:
                         trait_by_kingdom[k] = {
-                            "sum_mob": 0.0, "sum_warm": 0.0, "sum_size": 0.0, "count": 0,
+                            "sum_mob": 0.0, "sum_warm": 0.0, "sum_size": 0.0,
+                            "sum_pur": 0.0, "sum_pas": 0.0, "sum_ign": 0.0,
+                            "count": 0,
                         }
                     entry = trait_by_kingdom[k]
                     entry["sum_mob"] += s_mob
                     entry["sum_warm"] += s_warm
                     entry["sum_size"] += s_size
+                    entry["sum_pur"] += s_pur
+                    entry["sum_pas"] += s_pas
+                    entry["sum_ign"] += s_ign
                     entry["count"] += cnt
 
-                    trait_sum_mob += s_mob
-                    trait_sum_warm += s_warm
-                    trait_sum_size += s_size
+                    trait_sums["mob"] += s_mob
+                    trait_sums["warm"] += s_warm
+                    trait_sums["size"] += s_size
+                    trait_sums["pur"] += s_pur
+                    trait_sums["pas"] += s_pas
+                    trait_sums["ign"] += s_ign
                     trait_total_count += cnt
 
     top_families = dict(sorted(family_counts.items(), key=lambda x: x[1], reverse=True)[:20])
@@ -304,9 +316,13 @@ def _compute_stats(db_dir: str | None = None) -> dict:
                 "mobility": entry["sum_mob"] / cnt,
                 "warm_blood": entry["sum_warm"] / cnt,
                 "size": entry["sum_size"] / cnt,
+                "purity": entry["sum_pur"] / cnt,
+                "passion": entry["sum_pas"] / cnt,
+                "ignorance": entry["sum_ign"] / cnt,
                 "count": cnt,
             }
 
+    tc = trait_total_count or 1
     return {
         "total": total,
         "kingdoms": dict(sorted(kingdom_counts.items(), key=lambda x: x[1], reverse=True)),
@@ -315,9 +331,12 @@ def _compute_stats(db_dir: str | None = None) -> dict:
         "top_families": top_families,
         "db_file_count": len(db_files),
         "trait_by_kingdom": finalised_traits,
-        "avg_mobility": trait_sum_mob / trait_total_count if trait_total_count else 0,
-        "avg_warm_blood": trait_sum_warm / trait_total_count if trait_total_count else 0,
-        "avg_size": trait_sum_size / trait_total_count if trait_total_count else 0,
+        "avg_mobility": trait_sums["mob"] / tc,
+        "avg_warm_blood": trait_sums["warm"] / tc,
+        "avg_size": trait_sums["size"] / tc,
+        "avg_purity": trait_sums["pur"] / tc,
+        "avg_passion": trait_sums["pas"] / tc,
+        "avg_ignorance": trait_sums["ign"] / tc,
     }
 
 
@@ -328,17 +347,21 @@ def _compute_distribution(db_dir: str | None = None) -> list[dict]:
         return []
 
     groups: dict[tuple[str, str], dict] = {}
+    has_gunas = False
 
     for db_path in db_files:
         with get_species_connection(db_path) as conn:
             cols = {r[1] for r in conn.execute("PRAGMA table_info(species)")}
             if "mobility_score" not in cols:
                 return []
+            if not has_gunas:
+                has_gunas = "purity_score" in cols
 
+            guna_cols = ", SUM(purity_score), SUM(passion_score), SUM(ignorance_score)" if has_gunas else ""
             for row in conn.execute(
-                """SELECT kingdom, class_name,
+                f"""SELECT kingdom, class_name,
                     SUM(mobility_score), SUM(warm_blood_score), SUM(size_score),
-                    COUNT(*)
+                    COUNT(*){guna_cols}
                 FROM species
                 GROUP BY kingdom, class_name"""
             ):
@@ -347,13 +370,23 @@ def _compute_distribution(db_dir: str | None = None) -> list[dict]:
                 key = (k, c)
                 cnt = row[5]
                 s_mob, s_warm, s_size = row[2] or 0, row[3] or 0, row[4] or 0
+                s_pur = (row[6] or 0) if has_gunas else 0
+                s_pas = (row[7] or 0) if has_gunas else 0
+                s_ign = (row[8] or 0) if has_gunas else 0
 
                 if key not in groups:
-                    groups[key] = {"sum_mob": 0.0, "sum_warm": 0.0, "sum_size": 0.0, "count": 0}
+                    groups[key] = {
+                        "sum_mob": 0.0, "sum_warm": 0.0, "sum_size": 0.0,
+                        "sum_pur": 0.0, "sum_pas": 0.0, "sum_ign": 0.0,
+                        "count": 0,
+                    }
                 entry = groups[key]
                 entry["sum_mob"] += s_mob
                 entry["sum_warm"] += s_warm
                 entry["sum_size"] += s_size
+                entry["sum_pur"] += s_pur
+                entry["sum_pas"] += s_pas
+                entry["sum_ign"] += s_ign
                 entry["count"] += cnt
 
     result = []
@@ -366,6 +399,9 @@ def _compute_distribution(db_dir: str | None = None) -> list[dict]:
                 "mobility": entry["sum_mob"] / cnt,
                 "warm_blood": entry["sum_warm"] / cnt,
                 "size": entry["sum_size"] / cnt,
+                "purity": entry["sum_pur"] / cnt,
+                "passion": entry["sum_pas"] / cnt,
+                "ignorance": entry["sum_ign"] / cnt,
                 "count": cnt,
             })
 

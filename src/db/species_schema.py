@@ -1,6 +1,6 @@
 """Database schema for the species taxonomy database."""
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 CREATE_SPECIES_TABLE = """
 CREATE TABLE IF NOT EXISTS species (
@@ -23,7 +23,10 @@ CREATE TABLE IF NOT EXISTS species (
     source              TEXT DEFAULT 'GBIF',
     mobility_score      REAL DEFAULT 0.0,
     warm_blood_score    REAL DEFAULT 0.0,
-    size_score          REAL DEFAULT 0.0
+    size_score          REAL DEFAULT 0.0,
+    purity_score        REAL DEFAULT 0.0,
+    passion_score       REAL DEFAULT 0.0,
+    ignorance_score     REAL DEFAULT 0.0
 );
 """
 

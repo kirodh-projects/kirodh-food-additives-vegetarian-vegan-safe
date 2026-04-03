@@ -65,8 +65,8 @@ def render_species_page() -> None:
         )
         return
 
-    tab_search, tab_browse, tab_dist, tab_stats = st.tabs(
-        ["Search", "Browse", "Species Distribution", "Statistics"]
+    tab_search, tab_browse, tab_dist, tab_guna, tab_stats = st.tabs(
+        ["Search", "Browse", "Physical Traits", "Gunas (Purity / Passion / Ignorance)", "Statistics"]
     )
 
     with tab_search:
@@ -77,6 +77,9 @@ def render_species_page() -> None:
 
     with tab_dist:
         _render_distribution()
+
+    with tab_guna:
+        _render_guna_distribution()
 
     with tab_stats:
         _render_stats()
@@ -273,6 +276,110 @@ def _render_distribution() -> None:
         table_df["Mobility"] = table_df["Mobility"].apply(lambda v: f"{v:.3f}")
         table_df["Warm-blooded"] = table_df["Warm-blooded"].apply(lambda v: f"{v:.3f}")
         table_df["Size"] = table_df["Size"].apply(lambda v: f"{v:.3f}")
+        st.dataframe(table_df, width="stretch", height=400)
+
+
+# ── Guna Distribution (ternary plot) ───────────────────────────────────
+
+def _render_guna_distribution() -> None:
+    """Ternary plot of Sattva (purity) / Rajas (passion) / Tamas (ignorance)."""
+    st.subheader("Guna Distribution")
+    st.caption(
+        "Ternary plot of the three Gunas from Vedic philosophy. Each taxonomic class "
+        "is positioned by its relative composition of **Sattva** (purity, harmony, "
+        "nourishment), **Rajas** (passion, activity, desire), and **Tamas** (ignorance, "
+        "inertia, darkness). Scores are based on the spiritual and physical nature of "
+        "each group: diet, behaviour, habitat, and traditional associations."
+    )
+
+    data = _cached_trait_distribution()
+    if not data or "purity" not in data[0]:
+        st.info("Guna data not available. Run the trait migration to populate.")
+        return
+
+    df = pd.DataFrame(data)
+
+    # Kingdom filter
+    all_kingdoms = sorted(df["kingdom"].unique())
+    selected_kingdoms = st.multiselect(
+        "Filter by kingdom",
+        all_kingdoms,
+        default=all_kingdoms,
+        key="guna_kingdoms",
+    )
+
+    if not selected_kingdoms:
+        st.warning("Select at least one kingdom.")
+        return
+
+    filtered = df[df["kingdom"].isin(selected_kingdoms)].copy()
+
+    eps = 0.001
+    filtered["a"] = filtered["purity"] + eps
+    filtered["b"] = filtered["passion"] + eps
+    filtered["c"] = filtered["ignorance"] + eps
+
+    filtered["marker_size"] = filtered["count"].apply(
+        lambda n: max(4, min(40, 3 * math.log10(max(n, 1)) + 2))
+    )
+
+    fig = go.Figure()
+    for kingdom in selected_kingdoms:
+        kdf = filtered[filtered["kingdom"] == kingdom]
+        if kdf.empty:
+            continue
+        fig.add_trace(go.Scatterternary(
+            a=kdf["a"],
+            b=kdf["b"],
+            c=kdf["c"],
+            mode="markers",
+            name=kingdom,
+            marker=dict(
+                size=kdf["marker_size"],
+                color=KINGDOM_COLORS.get(kingdom, "#95a5a6"),
+                line=dict(width=0.5, color="white"),
+                opacity=0.8,
+            ),
+            text=kdf.apply(
+                lambda r: (
+                    f"{r['class_name']}<br>"
+                    f"{r['kingdom']}<br>"
+                    f"Species: {r['count']:,}<br>"
+                    f"Purity (Sattva): {r['purity']:.3f}<br>"
+                    f"Passion (Rajas): {r['passion']:.3f}<br>"
+                    f"Ignorance (Tamas): {r['ignorance']:.3f}"
+                ),
+                axis=1,
+            ),
+            hoverinfo="text",
+        ))
+
+    fig.update_layout(
+        ternary=dict(
+            aaxis=dict(title="Purity (Sattva)", min=0),
+            baxis=dict(title="Passion (Rajas)", min=0),
+            caxis=dict(title="Ignorance (Tamas)", min=0),
+        ),
+        height=700,
+        margin=dict(t=40, b=40, l=60, r=60),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.15,
+            xanchor="center",
+            x=0.5,
+        ),
+    )
+    st.plotly_chart(fig, width="stretch")
+
+    with st.expander("Class details", expanded=False):
+        table_df = filtered[["kingdom", "class_name", "count", "purity", "passion", "ignorance"]].copy()
+        table_df = table_df.sort_values("count", ascending=False)
+        table_df.columns = ["Kingdom", "Class", "Species Count", "Purity", "Passion", "Ignorance"]
+        table_df["Species Count"] = table_df["Species Count"].apply(lambda n: f"{n:,}")
+        table_df["Purity"] = table_df["Purity"].apply(lambda v: f"{v:.3f}")
+        table_df["Passion"] = table_df["Passion"].apply(lambda v: f"{v:.3f}")
+        table_df["Ignorance"] = table_df["Ignorance"].apply(lambda v: f"{v:.3f}")
         st.dataframe(table_df, width="stretch", height=400)
 
 
