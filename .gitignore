@@ -1,7 +1,12 @@
 # Database files
+databases/*.db
+databases/*.json
 *.db
-food_additives.db
 .web_scrape_cache.json
+
+# Large downloads
+*.gz
+*.tsv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

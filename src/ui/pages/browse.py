@@ -92,7 +92,7 @@ def render_browse_page(db_path: str) -> None:
         available_cols = [c for c in DISPLAY_COLUMNS if c in df.columns]
         st.dataframe(
             df[available_cols],
-            use_container_width=True,
+            width="stretch",
             height=min(600, 40 + len(records) * 35),
         )
 

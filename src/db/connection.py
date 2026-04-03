@@ -10,7 +10,7 @@ from src.db.schema import create_tables
 
 load_dotenv()
 
-DEFAULT_DB_PATH = "./food_additives.db"
+DEFAULT_DB_PATH = "./databases/food_additives.db"
 
 
 def get_db_path() -> str:

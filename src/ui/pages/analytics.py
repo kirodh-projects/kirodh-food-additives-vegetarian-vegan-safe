@@ -39,13 +39,13 @@ def render_analytics_page(db_path: str) -> None:
         vegan_data = summary.get("vegan_status", {})
         if vegan_data:
             fig = make_pie_chart(vegan_data, "Vegan Status Distribution", VEGAN_COLORS)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     with col2:
         veg_data = summary.get("vegetarian_status", {})
         if veg_data:
             fig = make_pie_chart(veg_data, "Vegetarian Status Distribution (Lacto)", VEGAN_COLORS)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     col1, col2 = st.columns(2)
 
@@ -53,13 +53,13 @@ def render_analytics_page(db_path: str) -> None:
         halal_data = summary.get("halal_status", {})
         if halal_data:
             fig = make_pie_chart(halal_data, "Halal Status Distribution", HALAL_COLORS)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     with col2:
         origin_data = summary.get("origin", {})
         if origin_data:
             fig = make_pie_chart(origin_data, "Origin Distribution", ORIGIN_COLORS)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     st.divider()
 
@@ -71,13 +71,13 @@ def render_analytics_page(db_path: str) -> None:
         safety_data = summary.get("safety_level", {})
         if safety_data:
             fig = make_bar_chart(safety_data, "Safety Level Breakdown", SAFETY_COLORS)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     with col2:
         origin_data = summary.get("origin", {})
         if origin_data:
             fig = make_bar_chart(origin_data, "Origin Breakdown", ORIGIN_COLORS)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     # --- Dangerous additives ---
     st.subheader("Dangerous Additives (Avoid / Banned)")
@@ -88,7 +88,7 @@ def render_analytics_page(db_path: str) -> None:
         available_cols = [c for c in display_cols if c in df.columns]
         st.dataframe(
             df[available_cols],
-            use_container_width=True,
+            width="stretch",
             height=min(400, 40 + len(dangerous) * 35),
         )
     else:
@@ -103,7 +103,7 @@ def render_analytics_page(db_path: str) -> None:
         # Top 15 categories by count
         sorted_cats = dict(sorted(category_data.items(), key=lambda x: x[1], reverse=True)[:15])
         fig = make_bar_chart(sorted_cats, "Top 15 Categories by Count", horizontal=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Category vs vegan stacked bar
     breakdown_data = get_category_vegan_breakdown(db_path)
@@ -120,7 +120,7 @@ def render_analytics_page(db_path: str) -> None:
                 "Vegan Status by Category (Top 10)",
                 VEGAN_COLORS,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
 
 def _render_metrics(summary: dict, total: int) -> None:

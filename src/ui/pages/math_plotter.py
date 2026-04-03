@@ -229,7 +229,7 @@ def _render_plot(
         hovermode="closest",
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     if total_skipped > 0:
         st.warning(

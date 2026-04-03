@@ -88,7 +88,7 @@ def render_reverse_subtract_page() -> None:
             hovermode="x unified",
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
         # --- Stats ---
         ys_arr = np.array(ys)
