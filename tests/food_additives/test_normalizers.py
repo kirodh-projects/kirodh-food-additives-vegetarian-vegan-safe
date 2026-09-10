@@ -1,6 +1,6 @@
 """Tests for E-code normalization and category mapping."""
 
-from src.etl.normalizers import (
+from src.food_additives.normalizers import (
     deduplicate_records,
     extract_numeric_base,
     normalize_category,

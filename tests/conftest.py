@@ -4,7 +4,7 @@ import sqlite3
 
 import pytest
 
-from src.db.schema import create_tables
+from src.food_additives.schema import create_tables
 
 
 @pytest.fixture

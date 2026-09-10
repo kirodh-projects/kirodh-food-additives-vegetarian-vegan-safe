@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Build the database at image build time
-RUN python -m src.etl.build_database
+RUN python -m src.food_additives.build_database
 
 EXPOSE 8501
 

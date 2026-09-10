@@ -1,28 +1,8 @@
-import os
-import requests
-from dotenv import load_dotenv
+"""Legacy entry point. Canonical location: :mod:`src.shared.data_downloader`."""
 
-load_dotenv()
+from src.shared.data_downloader import DATA_DIR, E_DATA_URL, download_file, ensure_data
 
-DATA_DIR = os.getenv("DATA_DIR", "./data")
-E_DATA_URL = os.getenv("E_DATA_URL")
-# INS_DATA_URL = os.getenv("INS_DATA_URL")
-
-os.makedirs(DATA_DIR, exist_ok=True)
-
-def download_file(url: str, filepath: str):
-    if os.path.exists(filepath):
-        return
-
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-
-    with open(filepath, "wb") as f:
-        f.write(response.content)
-
-def ensure_data():
-    download_file(E_DATA_URL, f"{DATA_DIR}/e_numbers.csv")
-    # download_file(INS_DATA_URL, f"{DATA_DIR}/ins_numbers.csv")
+__all__ = ["DATA_DIR", "E_DATA_URL", "download_file", "ensure_data"]
 
 
 if __name__ == '__main__':

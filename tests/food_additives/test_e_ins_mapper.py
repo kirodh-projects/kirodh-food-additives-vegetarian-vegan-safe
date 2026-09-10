@@ -1,6 +1,6 @@
 """Tests for E-number to INS number mapping."""
 
-from src.etl.e_ins_mapper import build_e_to_ins_map, _map_suffix_to_parenthetical
+from src.food_additives.e_ins_mapper import build_e_to_ins_map, _map_suffix_to_parenthetical
 
 
 class TestMapSuffixToParenthetical:

@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.etl.classifiers import (
+from src.food_additives.classifiers import (
     classify_origin,
     classify_safety,
     classify_vegan,

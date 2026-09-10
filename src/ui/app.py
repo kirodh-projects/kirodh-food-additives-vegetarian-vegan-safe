@@ -5,13 +5,13 @@ Routes between Food Additives, Species Taxonomy, and Tools sections.
 
 import streamlit as st
 
-from src.db.connection import ensure_database, get_db_path
-from src.ui.pages.analytics import render_analytics_page
-from src.ui.pages.browse import render_browse_page
-from src.ui.pages.math_plotter import render_math_plotter_page
-from src.ui.pages.reverse_subtract import render_reverse_subtract_page
-from src.ui.pages.search import render_search_page
-from src.ui.pages.species import render_species_page
+from src.food_additives.connection import ensure_database, get_db_path
+from src.food_additives.ui.analytics import render_analytics_page
+from src.food_additives.ui.browse import render_browse_page
+from src.food_additives.ui.search import render_search_page
+from src.numbers.ui.math_plotter_page import render_math_plotter_page
+from src.numbers.ui.reverse_subtract_page import render_reverse_subtract_page
+from src.species.ui.species_page import render_species_page
 
 
 def main() -> None:
@@ -26,7 +26,7 @@ def main() -> None:
     try:
         ensure_database(db_path)
     except Exception as e:
-        st.error(f"Database error: {e}. Run `python -m src.etl.build_database` first.")
+        st.error(f"Database error: {e}. Run `python -m src.food_additives.build_database` first.")
 
     # --- Sidebar navigation ---
     section = st.sidebar.selectbox(
@@ -42,7 +42,7 @@ def main() -> None:
             ["Search", "Analytics", "Browse"],
         )
         st.sidebar.divider()
-        st.sidebar.caption("```\npython -m src.etl.build_database\n```")
+        st.sidebar.caption("```\npython -m src.food_additives.build_database\n```")
 
         st.title("Food Additive Lookup")
         st.caption("E-Number & INS Additive Database - Vegan, Vegetarian, Halal & Safety Info")
@@ -56,7 +56,7 @@ def main() -> None:
 
     elif section == "Species Taxonomy":
         st.sidebar.divider()
-        st.sidebar.caption("```\npython -m src.etl.build_species_db\n```")
+        st.sidebar.caption("```\npython -m src.species.build_database\n```")
         render_species_page()
 
     elif section == "Tools":

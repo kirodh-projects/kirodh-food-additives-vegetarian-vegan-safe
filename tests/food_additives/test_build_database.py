@@ -5,8 +5,8 @@ import tempfile
 
 import pytest
 
-from src.db.connection import get_connection
-from src.etl.build_database import build_database, has_data
+from src.food_additives.build_database import build_database, has_data
+from src.food_additives.connection import get_connection
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def temp_db():
 class TestBuildDatabase:
     def test_full_build_creates_database(self, temp_db):
         data_dir = os.path.join(
-            os.path.dirname(__file__), "..", "additive_databases"
+            os.path.dirname(__file__), "..", "..", "additive_databases"
         )
         if not os.path.exists(data_dir):
             pytest.skip("additive_databases directory not found")
@@ -35,7 +35,7 @@ class TestBuildDatabase:
 
     def test_build_is_idempotent(self, temp_db):
         data_dir = os.path.join(
-            os.path.dirname(__file__), "..", "additive_databases"
+            os.path.dirname(__file__), "..", "..", "additive_databases"
         )
         if not os.path.exists(data_dir):
             pytest.skip("additive_databases directory not found")
@@ -49,23 +49,24 @@ class TestBuildDatabase:
 
     def test_force_rebuild(self, temp_db):
         data_dir = os.path.join(
-            os.path.dirname(__file__), "..", "additive_databases"
+            os.path.dirname(__file__), "..", "..", "additive_databases"
         )
         if not os.path.exists(data_dir):
             pytest.skip("additive_databases directory not found")
 
         count1 = build_database(db_path=temp_db, data_dir=data_dir)
         count2 = build_database(db_path=temp_db, data_dir=data_dir, force_rebuild=True)
+        assert count1 > 0
         assert count2 > 0
 
     def test_has_data_empty(self, temp_db):
-        from src.db.connection import ensure_database
+        from src.food_additives.connection import ensure_database
         ensure_database(temp_db)
         assert has_data(temp_db) is False
 
     def test_has_data_populated(self, temp_db):
         data_dir = os.path.join(
-            os.path.dirname(__file__), "..", "additive_databases"
+            os.path.dirname(__file__), "..", "..", "additive_databases"
         )
         if not os.path.exists(data_dir):
             pytest.skip("additive_databases directory not found")

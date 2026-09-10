@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.db.queries import (
+from src.food_additives.queries import (
     check_duplicates,
     get_all_additives,
     get_analytics_summary,
@@ -22,7 +22,7 @@ def _db_path_from_conn(conn):
 
 class TestSearchByCode:
     def test_search_e_number(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -31,7 +31,7 @@ class TestSearchByCode:
             assert result["e_number"] == "E100"
 
     def test_search_without_prefix(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -40,7 +40,7 @@ class TestSearchByCode:
             assert result["e_number"] == "E100"
 
     def test_search_case_insensitive(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -48,7 +48,7 @@ class TestSearchByCode:
             assert result is not None
 
     def test_search_not_found(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -56,7 +56,7 @@ class TestSearchByCode:
             assert result is None
 
     def test_search_by_ins_number(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -67,7 +67,7 @@ class TestSearchByCode:
 
 class TestSearchByName:
     def test_search_partial_name(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -78,7 +78,7 @@ class TestSearchByName:
 
 class TestGetAnalyticsSummary:
     def test_summary_counts(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -91,7 +91,7 @@ class TestGetAnalyticsSummary:
 
 class TestGetAllAdditives:
     def test_no_filters(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -99,7 +99,7 @@ class TestGetAllAdditives:
             assert len(results) == 10
 
     def test_filter_by_vegan(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -109,7 +109,7 @@ class TestGetAllAdditives:
             assert all(r["vegan_status"] == "Yes" for r in results)
 
     def test_pagination(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -122,7 +122,7 @@ class TestGetAllAdditives:
 
 class TestGetTotalCount:
     def test_total_count(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -130,7 +130,7 @@ class TestGetTotalCount:
             assert count == 10
 
     def test_filtered_count(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 
@@ -140,7 +140,7 @@ class TestGetTotalCount:
 
 class TestCheckDuplicates:
     def test_no_duplicates(self, populated_db):
-        with patch("src.db.queries.get_connection") as mock_conn:
+        with patch("src.food_additives.queries.get_connection") as mock_conn:
             mock_conn.return_value.__enter__ = lambda _: populated_db
             mock_conn.return_value.__exit__ = lambda *_: None
 

@@ -11,6 +11,38 @@ A comprehensive Streamlit web application combining multiple tools:
 
 ---
 
+## Modules
+
+Four independent, UI-free code engines live in `engines/` — copy any single
+folder into another project and it works (no cross-engine imports, no `src`
+imports, no Streamlit). Each engine has its own `README.md` and runnable
+`examples/` with three output modes: **data** (pure dicts/lists), **png**
+(static Matplotlib), **plotly** (interactive HTML + optional local server).
+
+| # | Module | Engine path | What it produces |
+|---|---|---|---|
+| 1 | **Food Additives — vegan / vegetarian indicator per E or INS number** | `engines/food_additives/` | Lookup by E/INS code or name (vegan, vegetarian/lacto, halal, safety, origin) + analytics (vegan/veg/halal/origin pies, safety/category bars, vegan-by-category stacked bar, dangerous-additives table) |
+| 2 | **Species Taxonomy — species browser + plots** | `engines/species/` | Search/browse of ~5.9M GBIF species + trait scores (mobility / warm-blood / size, gunas) + statistics (kingdom pie, rank bars, top-20 families, ternary trait/guna plots) |
+| 3 | **Reverse Subtraction — number subtraction plot** | `engines/reverse_subtraction/` | Data + plot of `n - reverse(n)` over any range + descriptive statistics |
+| 4 | **Math Plotter — parabolic axis transformation plot** | `engines/math_plotter/` | Data + plot wrapping 10 preset functions onto `y = x²` via signed arc-length |
+
+```bash
+python -m engines.food_additives.examples.example_lookup --code E120
+python -m engines.food_additives.examples.example_analytics --backend png --out analytics.png
+python -m engines.species.examples.example_search --query "Panthera leo" --limit 10
+python -m engines.reverse_subtraction.examples.example_basic --start 1 --end 200
+python -m engines.math_plotter.examples.example_plot_png --functions "sin(x)" --out transform.png
+```
+
+The Streamlit web UI is kept separately under `src/` (`src/ui/app.py` entry
+via root `app.py`, pages in `src/*/ui/`) — it consumes data but is never
+imported by engines. Details per engine live in `engines/*/README.md`;
+legacy `src/` READMEs describe the UI-backed layout.
+
+Legacy thin wrappers at repo root (`check_duplicates.py`, `math_plotter.py`, `data_downloader.py`) and deprecated shims (`src/db/`, `src/etl/`, `src/utils/`, `src/ui/pages/`, `src/ui/components/`) are not separate modules.
+
+---
+
 ## Purpose
 
 Food product labels list additives by E-number or INS number, but it is difficult to tell at a glance whether an additive is:
@@ -70,26 +102,26 @@ pip install -r requirements.txt
 ### Build the food additives database
 
 ```bash
-python -m src.etl.build_database
+python -m src.food_additives.build_database
 ```
 
 This reads all data sources from `additive_databases/`, merges and classifies them, and writes to `databases/food_additives.db`. It is idempotent: if data already exists, it skips. Use `--force` to rebuild from scratch:
 
 ```bash
-python -m src.etl.build_database --force
+python -m src.food_additives.build_database --force
 ```
 
 ### Build the species taxonomy database
 
 ```bash
-python -m src.etl.build_species_db
+python -m src.species.build_database
 ```
 
 This downloads the GBIF Backbone Taxonomy (~490MB compressed), processes ~7.7 million rows in two passes, and creates 46 SQLite database files (~45MB each) in `databases/`. The download is cached; re-running skips it. Total: ~5.9 million species/subspecies/variety/form records.
 
 ```bash
-python -m src.etl.build_species_db --force   # Force re-download and rebuild
-python -m src.etl.build_species_db --db-dir ./my_dir  # Custom output directory
+python -m src.species.build_database --force   # Force re-download and rebuild
+python -m src.species.build_database --db-dir ./my_dir  # Custom output directory
 ```
 
 ### Run the app
@@ -103,6 +135,8 @@ The app opens at [http://localhost:8501](http://localhost:8501).
 ### Check for duplicates
 
 ```bash
+python -m src.food_additives.duplicates
+# legacy wrapper:
 python check_duplicates.py
 ```
 
@@ -133,11 +167,15 @@ The database is built at image build time. The app is available at [http://local
 
 ## Project Structure
 
+One self-contained Python module per functionality (see each
+`README.md` for details). Old `src.db / src.etl / src.utils /
+src.ui.pages` import paths still work as thin deprecated shims.
+
 ```
 .
 +-- app.py                          # Streamlit entry point (thin wrapper)
-+-- check_duplicates.py             # Standalone duplicate checker script
-+-- math_plotter.py                 # Original math plotter script (standalone)
++-- check_duplicates.py             # Legacy wrapper -> src.food_additives.duplicates
++-- math_plotter.py                 # Legacy wrapper -> src.numbers.parabolic_transform.Axis
 +-- pyproject.toml                  # Project config, dependencies, pytest/ruff settings
 +-- requirements.txt                # Python dependencies
 +-- Dockerfile                      # Python 3.12-slim container
@@ -163,47 +201,71 @@ The database is built at image build time. The app is available at [http://local
 |       +-- ins/index.csv          # 437 INS numbers
 |
 +-- src/
-|   +-- db/                         # Database layer (read path)
-|   |   +-- schema.py              # Food additives CREATE TABLE definitions
-|   |   +-- connection.py          # Food additives SQLite connection manager (WAL mode)
-|   |   +-- queries.py             # Food additive queries (search, analytics, browse)
-|   |   +-- species_schema.py      # Species table CREATE TABLE definitions
-|   |   +-- species_connection.py  # Multi-file species DB connection manager
-|   |   +-- species_queries.py     # Species queries (search, browse, stats, filters)
-|   |
-|   +-- etl/                        # ETL pipeline (write path)
-|   |   +-- build_database.py      # Food additive ETL orchestrator
-|   |   +-- build_species_db.py    # GBIF species database builder (two-pass)
-|   |   +-- parsers.py             # 7 parsers for food additive data sources
-|   |   +-- normalizers.py         # E-code normalization, category mapping, dedup
+|   +-- food_additives/             # Food additives domain (README inside)
+|   |   +-- schema.py              # CREATE TABLE definitions
+|   |   +-- connection.py          # SQLite connection manager (WAL mode)
+|   |   +-- queries.py             # Search, analytics, browse queries
 |   |   +-- classifiers.py        # Three-tier vegan/vegetarian/safety/origin classification
+|   |   +-- parsers.py             # 7 parsers for data sources
+|   |   +-- normalizers.py         # E-code normalization, category mapping, dedup
 |   |   +-- e_ins_mapper.py       # E-number <-> INS number cross-reference
 |   |   +-- web_scraper.py        # Supplementary web-informed classification data
+|   |   +-- constants.py           # Keyword lists, known E-number tables
+|   |   +-- text_analysis.py       # Keyword matching with context exclusion logic
+|   |   +-- build_database.py      # ETL orchestrator (python -m src.food_additives.build_database)
+|   |   +-- duplicates.py          # Duplicate checker (python -m src.food_additives.duplicates)
+|   |   +-- README.md
+|   |   +-- ui/
+|   |       +-- search.py         # Search page
+|   |       +-- analytics.py      # Analytics dashboard
+|   |       +-- browse.py         # Filterable browse table
+|   |       +-- additive_card.py  # Single additive display card
+|   |       +-- charts.py         # Plotly chart builders
 |   |
-|   +-- ui/                         # Streamlit UI layer
-|   |   +-- app.py                 # App routing (3 sections: Additives, Species, Tools)
-|   |   +-- pages/
-|   |   |   +-- search.py         # Food additive search
-|   |   |   +-- analytics.py      # Food additive analytics dashboard
-|   |   |   +-- browse.py         # Food additive filterable browse table
-|   |   |   +-- species.py        # Species taxonomy search, browse, statistics
-|   |   |   +-- math_plotter.py   # Parabolic axis transformation plotter
-|   |   |   +-- reverse_subtract.py  # Reverse subtraction plotter
-|   |   +-- components/
-|   |       +-- additive_card.py  # Single additive display card with status pills
-|   |       +-- charts.py         # Plotly chart builder functions
+|   +-- species/                    # Species taxonomy domain (README inside)
+|   |   +-- schema.py              # Species table definitions
+|   |   +-- connection.py          # Multi-file connection manager
+|   |   +-- queries.py             # Search, browse, stats, filters (with JSON cache)
+|   |   +-- traits.py              # Mobility / warm-blood / size + guna heuristics
+|   |   +-- build_database.py      # GBIF builder (python -m src.species.build_database)
+|   |   +-- README.md
+|   |   +-- ui/
+|   |       +-- species_page.py    # Search, browse, traits, gunas, statistics tabs
 |   |
-|   +-- utils/                      # Shared utilities
-|       +-- constants.py           # Keyword lists, known E-number classification tables
-|       +-- text_analysis.py       # Keyword matching with context exclusion logic
+|   +-- numbers/                    # Numbers / math tools domain (README inside)
+|   |   +-- reverse_subtraction.py  # n - reverse(n) pure logic
+|   |   +-- parabolic_transform.py  # Parabolic axis transform pure logic + Axis class
+|   |   +-- README.md
+|   |   +-- ui/
+|   |       +-- reverse_subtract_page.py  # Reverse subtraction plotter
+|   |       +-- math_plotter_page.py      # Parabolic axis transformation plotter
+|   |
+|   +-- shared/                     # Cross-domain helpers (README inside)
+|   |   +-- config.py               # DB_PATH, DATA_DIR, SPECIES_DB_DIR getters
+|   |   +-- data_downloader.py      # Generic download helper
+|   |   +-- README.md
+|   |
+|   +-- ui/                         # App shell (README inside)
+|   |   +-- app.py                 # Routing: Additives / Species / Tools
+|   |   +-- README.md
+|   |
+|   +-- db/ etl/ utils/ ui/pages/ ui/components/
+|       +-- deprecated shims re-exporting the domain modules
 |
-+-- tests/                          # Test suite (89 tests)
++-- tests/                          # Test suite split per module
     +-- conftest.py                # Shared fixtures (in-memory DB, sample data)
-    +-- test_classifiers.py        # 32 tests: vegan/vegetarian/safety/origin classification
-    +-- test_normalizers.py        # 18 tests: E-code normalization, category mapping
-    +-- test_e_ins_mapper.py       # 9 tests: E-to-INS mapping
-    +-- test_queries.py            # 12 tests: search, analytics, filters, pagination
-    +-- test_build_database.py     # 5 tests: full ETL integration, idempotency
+    +-- food_additives/
+    |   +-- test_classifiers.py    # vegan/vegetarian/safety/origin classification
+    |   +-- test_normalizers.py    # E-code normalization, category mapping
+    |   +-- test_e_ins_mapper.py   # E-to-INS mapping
+    |   +-- test_queries.py        # search, analytics, filters, pagination
+    |   +-- test_build_database.py # full ETL integration, idempotency
+    +-- species/
+    |   +-- test_traits.py         # trait heuristics (pure functions)
+    |   +-- test_species_queries.py  # search/browse across temp shards
+    +-- numbers/
+        +-- test_reverse_subtraction.py  # reverse(n) edge cases
+        +-- test_parabolic_transform.py  # arc-length, transform, presets
 ```
 
 ---
@@ -356,17 +418,21 @@ After building from all sources:
 
 ## Test Coverage
 
-89 tests passing across 5 test modules:
+Tests are split per module (`pytest tests/<module>/ -v`):
 
-| Module | Tests | Coverage |
+| Module | Tests | Covers |
 |---|---|---|
-| `test_classifiers.py` | 32 | classifiers.py: 100% |
-| `test_normalizers.py` | 18 | normalizers.py: 88% |
-| `test_e_ins_mapper.py` | 9 | e_ins_mapper.py: 98% |
-| `test_queries.py` | 12 | queries.py: 82% |
-| `test_build_database.py` | 5 | build_database.py: 87% |
+| `tests/food_additives/test_classifiers.py` | 32 | classifiers.py |
+| `tests/food_additives/test_normalizers.py` | 18 | normalizers.py |
+| `tests/food_additives/test_e_ins_mapper.py` | 9 | e_ins_mapper.py |
+| `tests/food_additives/test_queries.py` | 12 | queries.py |
+| `tests/food_additives/test_build_database.py` | 5 | build_database.py |
+| `tests/species/test_traits.py` | 8 | species/traits.py |
+| `tests/species/test_species_queries.py` | 7 | species/queries.py + connection.py |
+| `tests/numbers/test_reverse_subtraction.py` | 9 | numbers/reverse_subtraction.py |
+| `tests/numbers/test_parabolic_transform.py` | 10 | numbers/parabolic_transform.py |
 
-Core logic modules (classifiers, schema, constants) have 100% coverage. UI components are not unit-tested as they require a Streamlit runtime.
+Core logic modules have high coverage. UI components are not unit-tested as they require a Streamlit runtime.
 
 ---
 
